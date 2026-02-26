@@ -1,31 +1,25 @@
 import streamlit as st
+import pandas as pd
 
 st.set_page_config(page_title="Gerar Plano Alimentar", layout="wide")
-
 
 if "etapa" not in st.session_state:
     st.session_state.etapa = 1
 
-#css
+if "medicamentos" not in st.session_state:
+    st.session_state.medicamentos = []
 
+if "suplementos" not in st.session_state:
+    st.session_state.suplementos = []
+
+# CSS
 st.markdown("""
 <style>
+.main { background-color: #f5f6fa; }
 
-.main {
-    background-color: #f5f6fa;
-}
+.titulo { font-size: 26px; font-weight: 600; text-align: center; }
 
-.titulo {
-    font-size: 26px;
-    font-weight: 600;
-    text-align: center;
-}
-
-.subtitulo {
-    text-align: center;
-    color: gray;
-    margin-bottom: 30px;
-}
+.subtitulo { text-align: center; color: gray; margin-bottom: 30px; }
 
 .card {
     background-color: white;
@@ -34,11 +28,7 @@ st.markdown("""
     box-shadow: 0px 4px 12px rgba(0,0,0,0.05);
 }
 
-.step {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-}
+.step { display: flex; align-items: center; margin-bottom: 20px; }
 
 .step-circle {
     width: 28px;
@@ -57,19 +47,14 @@ st.markdown("""
     color: white;
     font-weight: 600;
 }
-
 </style>
 """, unsafe_allow_html=True)
 
-
 st.markdown('<div class="titulo">GERAR PLANO ALIMENTAR</div>', unsafe_allow_html=True)
-st.markdown('<div class="subtitulo">Preencha os dados do paciente para gerar um plano alimentar personalizado</div>', unsafe_allow_html=True)
-
 
 col_steps, col_form = st.columns([1, 3])
 
-#etapas
-
+# ETAPAS LATERAL
 with col_steps:
     st.markdown("### Etapas")
 
@@ -98,11 +83,11 @@ with col_steps:
             </div>
             """, unsafe_allow_html=True)
 
-#forms
-
+# FORMULÁRIOS
 with col_form:
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
+    # ETAPA 1 
     if st.session_state.etapa == 1:
 
         st.markdown("### Identificação do Paciente")
@@ -117,44 +102,139 @@ with col_form:
 
         diagnostico = st.text_input("Diagnóstico Principal", "Diabetes II")
 
+    # ETAPA 2 - ANTROPOMETRIA
     elif st.session_state.etapa == 2:
+
         st.markdown("### Antropometria")
-        peso = st.number_input("Peso (kg)", 0.0, 300.0, 58.0)
-        altura = st.number_input("Altura (m)", 0.0, 3.0, 1.65)
 
+        col1, col2 = st.columns(2)
+        with col1:
+            altura = st.number_input("Altura (cm)", 0.0)
+            peso = st.number_input("Peso atual (kg)", 0.0)
+            variacao = st.number_input("Variação de peso (%)")
+
+        with col2:
+            peso_3m = st.number_input("Peso há 3 meses (kg)", 0.0)
+            imc = st.number_input("IMC", 0.0)
+
+        triagem = st.selectbox(
+            "Triagem Nutricional",
+            ["Selecione", "MUST", "NRS-2002", "PG-SGA"]
+        )
+
+    # ETAPA 3 - DIAGNÓSTICO
     elif st.session_state.etapa == 3:
+
         st.markdown("### Diagnóstico")
-        st.text_area("Detalhes do diagnóstico")
 
+        tempo_diag = st.number_input("Tempo de diagnóstico (anos)", 0)
+        hba1c = st.number_input("HbA1c (%)", 0.0)
+
+        st.markdown("### Monitorização Glicêmica")
+
+        col1, col2 = st.columns(2)
+        with col1:
+            cgm = st.checkbox("CGM")
+        with col2:
+            smbg = st.checkbox("SMBG")
+
+        hipo = st.checkbox("Histórico de Hipoglicemia")
+
+        col3, col4 = st.columns(2)
+        with col3:
+            glic_jejum = st.number_input("Glicemia de jejum (mg/dL)", 0)
+        with col4:
+            glic_pos = st.number_input("Glicemia pós-prandial (mg/dL)", 0)
+
+    # ETAPA 4 - MEDICAMENTOS
     elif st.session_state.etapa == 4:
-        st.markdown("### Medicamentos e Suplementação")
-        st.text_area("Medicamentos em uso")
 
+        st.markdown("### Medicamentos")
+
+        nome_med = st.text_input("Nome do medicamento")
+        dose_med = st.text_input("Dose")
+        freq_med = st.text_input("Frequência")
+        horario_med = st.text_input("Horário")
+
+        if st.button("➕ Adicionar Medicamento"):
+            st.session_state.medicamentos.append({
+                "Nome": nome_med,
+                "Dose": dose_med,
+                "Frequência": freq_med,
+                "Horário": horario_med
+            })
+
+        if st.session_state.medicamentos:
+            df_med = pd.DataFrame(st.session_state.medicamentos)
+            st.dataframe(df_med, use_container_width=True)
+
+        st.markdown("---")
+        st.markdown("### Suplementação")
+
+        nome_sup = st.text_input("Nome do suplemento")
+        dose_sup = st.text_input("Dose suplemento")
+        freq_sup = st.text_input("Frequência suplemento")
+        horario_sup = st.text_input("Horário suplemento")
+
+        if st.button("➕ Adicionar Suplemento"):
+            st.session_state.suplementos.append({
+                "Nome": nome_sup,
+                "Dose": dose_sup,
+                "Frequência": freq_sup,
+                "Horário": horario_sup
+            })
+
+        if st.session_state.suplementos:
+            df_sup = pd.DataFrame(st.session_state.suplementos)
+            st.dataframe(df_sup, use_container_width=True)
+
+    # ETAPA 5 - OBJETIVOS
     elif st.session_state.etapa == 5:
-        st.markdown("### Objetivo")
-        st.selectbox("Objetivo do plano", ["Emagrecimento", "Hipertrofia", "Condicionamento", "Imunidade"])
 
+        st.markdown("### Objetivos")
+
+        manter = st.checkbox("Manter peso")
+        perder = st.checkbox("Perder peso")
+        ganhar = st.checkbox("Ganhar peso")
+
+        peso_alvo = st.number_input("Peso alvo (kg)", 0.0)
+        prazo = st.number_input("Prazo estimado (meses)", 0)
+
+        st.markdown("### Metas Nutricionais Específicas")
+
+        calorias = st.number_input("Calorias diárias (kcal)", 0)
+        carb = st.number_input("Carboidratos (g/dia)", 0)
+        prot = st.number_input("Proteínas (g/dia)", 0)
+        gordura = st.number_input("Gordura (g/dia)", 0)
+
+    # ETAPA 6
     elif st.session_state.etapa == 6:
+
         st.markdown("### Refinação para IA")
         st.text_area("Observações adicionais para personalização")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-#botoes
-
+# BOTÕES
 st.write("")
-colA, colB, colC = st.columns([1,1,2])
+col1, col2, col3, col4 = st.columns([1,1,1,2])
 
-with colA:
+with col1:
+    if st.session_state.etapa > 1:
+        if st.button("⬅ Voltar"):
+            st.session_state.etapa -= 1
+            st.rerun()
+
+with col2:
     if st.button("💾 Salvar rascunho"):
         st.success("Rascunho salvo!")
 
-with colB:
+with col3:
     if st.button("🗑 Limpar"):
         st.session_state.clear()
         st.rerun()
 
-with colC:
+with col4:
     if st.button("Próxima ➜", use_container_width=True):
         if st.session_state.etapa < 6:
             st.session_state.etapa += 1
