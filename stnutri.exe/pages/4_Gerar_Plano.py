@@ -54,8 +54,9 @@ st.markdown('<div class="titulo">GERAR PLANO ALIMENTAR</div>', unsafe_allow_html
 
 col_steps, col_form = st.columns([1, 3])
 
-# ETAPAS LATERAL
+
 with col_steps:
+
     st.markdown("### Etapas")
 
     etapas = [
@@ -68,6 +69,7 @@ with col_steps:
     ]
 
     for i, nome in enumerate(etapas, start=1):
+
         if st.session_state.etapa == i:
             st.markdown(f"""
             <div class="step">
@@ -75,6 +77,7 @@ with col_steps:
                 <div><b>{nome}</b></div>
             </div>
             """, unsafe_allow_html=True)
+
         else:
             st.markdown(f"""
             <div class="step">
@@ -83,31 +86,37 @@ with col_steps:
             </div>
             """, unsafe_allow_html=True)
 
-# FORMULÁRIOS
+
 with col_form:
+
     st.markdown('<div class="card">', unsafe_allow_html=True)
 
-    # ETAPA 1 
+    # ETAPA 1
     if st.session_state.etapa == 1:
 
         st.markdown("### Identificação do Paciente")
 
-        nome = st.text_input("Nome Completo", "Larissa Gabriela dos Santos Brandim")
+        nome = st.text_input("Nome Completo")
 
         col1, col2 = st.columns(2)
+
         with col1:
             nascimento = st.date_input("Data de Nascimento")
+
         with col2:
             sexo = st.selectbox("Sexo", ["Feminino", "Masculino"])
 
-        diagnostico = st.text_input("Diagnóstico Principal", "Diabetes II")
+        diagnostico = st.text_input("Diagnóstico Principal")
 
-    # ETAPA 2 - ANTROPOMETRIA
+        st.session_state.paciente = nome
+
+    # ETAPA 2
     elif st.session_state.etapa == 2:
 
         st.markdown("### Antropometria")
 
         col1, col2 = st.columns(2)
+
         with col1:
             altura = st.number_input("Altura (cm)", 0.0)
             peso = st.number_input("Peso atual (kg)", 0.0)
@@ -115,14 +124,21 @@ with col_form:
 
         with col2:
             peso_3m = st.number_input("Peso há 3 meses (kg)", 0.0)
-            imc = st.number_input("IMC", 0.0)
+
+        # IMC automático
+        if altura > 0 and peso > 0:
+            altura_m = altura / 100
+            imc = peso / (altura_m ** 2)
+            st.metric("IMC calculado", round(imc, 2))
+        else:
+            imc = 0
 
         triagem = st.selectbox(
             "Triagem Nutricional",
             ["Selecione", "MUST", "NRS-2002", "PG-SGA"]
         )
 
-    # ETAPA 3 - DIAGNÓSTICO
+    # ETAPA 3
     elif st.session_state.etapa == 3:
 
         st.markdown("### Diagnóstico")
@@ -133,20 +149,24 @@ with col_form:
         st.markdown("### Monitorização Glicêmica")
 
         col1, col2 = st.columns(2)
+
         with col1:
             cgm = st.checkbox("CGM")
+
         with col2:
             smbg = st.checkbox("SMBG")
 
         hipo = st.checkbox("Histórico de Hipoglicemia")
 
         col3, col4 = st.columns(2)
+
         with col3:
             glic_jejum = st.number_input("Glicemia de jejum (mg/dL)", 0)
+
         with col4:
             glic_pos = st.number_input("Glicemia pós-prandial (mg/dL)", 0)
 
-    # ETAPA 4 - MEDICAMENTOS
+    # ETAPA 4
     elif st.session_state.etapa == 4:
 
         st.markdown("### Medicamentos")
@@ -188,7 +208,7 @@ with col_form:
             df_sup = pd.DataFrame(st.session_state.suplementos)
             st.dataframe(df_sup, use_container_width=True)
 
-    # ETAPA 5 - OBJETIVOS
+    # ETAPA 5
     elif st.session_state.etapa == 5:
 
         st.markdown("### Objetivos")
@@ -200,23 +220,25 @@ with col_form:
         peso_alvo = st.number_input("Peso alvo (kg)", 0.0)
         prazo = st.number_input("Prazo estimado (meses)", 0)
 
-        st.markdown("### Metas Nutricionais Específicas")
+        st.markdown("### Metas Nutricionais")
 
-        calorias = st.number_input("Calorias diárias (kcal)", 0)
-        carb = st.number_input("Carboidratos (g/dia)", 0)
-        prot = st.number_input("Proteínas (g/dia)", 0)
-        gordura = st.number_input("Gordura (g/dia)", 0)
+        calorias = st.number_input("Calorias diárias (kcal)", 1500)
+        carb = st.number_input("Carboidratos (g/dia)", 180)
+        prot = st.number_input("Proteínas (g/dia)", 80)
+        gordura = st.number_input("Gordura (g/dia)", 60)
 
     # ETAPA 6
     elif st.session_state.etapa == 6:
 
         st.markdown("### Refinação para IA")
-        st.text_area("Observações adicionais para personalização")
+
+        observacoes = st.text_area("Observações adicionais para personalização")
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# BOTÕES
+
 st.write("")
+
 col1, col2, col3, col4 = st.columns([1,1,1,2])
 
 with col1:
@@ -235,9 +257,24 @@ with col3:
         st.rerun()
 
 with col4:
+
     if st.button("Próxima ➜", use_container_width=True):
+
         if st.session_state.etapa < 6:
+
             st.session_state.etapa += 1
+
         else:
-            st.success("Plano finalizado com sucesso!")
+
+            # salva plano
+            st.session_state.plano = {
+                "calorias": calorias,
+                "carbo": carb,
+                "proteina": prot,
+                "gordura": gordura,
+                "imc": imc
+            }
+
+            st.switch_page("pages/3_Plano_Detalhado.py")
+
         st.rerun()
